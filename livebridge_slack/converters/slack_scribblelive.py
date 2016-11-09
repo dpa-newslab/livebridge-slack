@@ -15,7 +15,7 @@
 # limitations under the License.
 import logging
 import re
-from livebridge.base import BaseConverter
+from livebridge.base import BaseConverter, ConversionResult
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,6 @@ class SlackScribbleliveConverter(BaseConverter):
 
     async def convert(self, post):
         content =  ""
-        images = []
         try:
             msg = post.get("message", post)
             content = msg.get("text", "").strip()
@@ -42,5 +41,5 @@ class SlackScribbleliveConverter(BaseConverter):
         except Exception as e:
             logger.error("Converting post failed.")
             logger.exception(e)
-        return content, images
+        return ConversionResult(content=content)
 

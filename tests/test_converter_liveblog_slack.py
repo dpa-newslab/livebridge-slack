@@ -16,6 +16,7 @@
 import asynctest
 import os.path
 from livebridge_slack import LiveblogSlackConverter
+from livebridge.base import ConversionResult
 from tests import load_json
 
 class SlackConverterTest(asynctest.TestCase):
@@ -25,16 +26,17 @@ class SlackConverterTest(asynctest.TestCase):
 
     async def test_simple_conversion(self):
         post = load_json('post_to_convert.json')
-        res, images = await self.converter.convert(post)
-        assert len(res) >= 1
-        assert res == """\n*Text*  mit ein parr _Formatierungen_. Und einem <http://dpa.de|Link>. Und weiterer ~Text~.\n\n\nhttp://newslab-liveblog-demo.s3-eu-central-1.amazonaws.com/aa7c892f1b1b7df17f635106e27c55d86a5c5b6144bebe2490f4ce14be671dd7\n\nGähn  _(Mich)_ \nListen:\n • Eins\n • Zwei\n • Drei\n\n\n • u1\n • u2\n • u3\n\n\n>*Mit dem Wissen wächst der Zweifel.*\n> • _Johann Wolfgang von Goethe_\n\n\nNochmal _*abschließender* _ Text.\n\nhttps://twitter.com/dpa_live/status/775991579676909568\n"""
-        await self.converter.remove_images(images)
+        conversion = await self.converter.convert(post)
+        assert type(conversion) == ConversionResult
+        assert len(conversion.content) >= 1
+        assert conversion.content == """\n*Text*  mit ein parr _Formatierungen_. Und einem <http://dpa.de|Link>. Und weiterer ~Text~.\n\n\nhttp://newslab-liveblog-demo.s3-eu-central-1.amazonaws.com/aa7c892f1b1b7df17f635106e27c55d86a5c5b6144bebe2490f4ce14be671dd7\n\nGähn  _(Mich)_ \nListen:\n • Eins\n • Zwei\n • Drei\n\n\n • u1\n • u2\n • u3\n\n\n>*Mit dem Wissen wächst der Zweifel.*\n> • _Johann Wolfgang von Goethe_\n\n\nNochmal _*abschließender* _ Text.\n\nhttps://twitter.com/dpa_live/status/775991579676909568\n"""
+        await self.converter.remove_images(conversion.images)
 
         # let it fail with catched exception
         del post["groups"][1]["refs"]
-        res, images = await self.converter.convert(post)
-        assert res == ""
-        assert images == []
+        conversion = await self.converter.convert(post)
+        assert conversion.content == ""
+        assert conversion.images == []
 
     async def test_convert_quote(self):
         item = {"item": {"meta": {"quote": "Zitat", "credit": "Urheber"}}}

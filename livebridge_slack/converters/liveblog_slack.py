@@ -17,7 +17,7 @@ import bleach
 import logging
 import re
 
-from livebridge.base import BaseConverter
+from livebridge.base import BaseConverter, ConversionResult
 
 logger = logging.getLogger(__name__)
 
@@ -121,14 +121,7 @@ class LiveblogSlackConverter(BaseConverter):
                         content += img_text
                     elif item["item"]["item_type"] == "embed":
                         content += await self._convert_embed(item)
-                    """elif item["item"]["item_type"] == "image":
-                        caption, img_path = await self._convert_image_inline(item)
-                        if caption:
-                            content += caption
-                        if img_path:
-                            content += caption
-                            images.append(img_path)"""
         except Exception as e:
             logger.error("Converting to slack post failed.")
             logger.exception(e)
-        return content, images
+        return ConversionResult(content=content)
