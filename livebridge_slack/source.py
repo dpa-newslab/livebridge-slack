@@ -57,17 +57,16 @@ class SlackSource(SlackClient, StreamingSource):
             logger.info("Listening to ChannelID: {}".format(channel_id))
             logger.info("Connecting to {}".format(wss_url))
             self.websocket = await websockets.connect(wss_url)
-            while not hasattr(self, "shutdown") or self.shutdown != True:
+            while self.websocket.open:
                 msg = await self.websocket.recv()
                 doc = await self._inspect_msg(msg)
                 if doc:
                     await callback([SlackPost(doc)])
         except Exception as e:
             logger.error("Exception listening to websocket {} {}: {}".format(self.type, self.channel, e))
-            #logger.exception(e)
         return True
 
     async def stop(self):
-        logger.debug("SHUTDOWN")
-        await self.websocket.close()
+        logger.debug("Stopping slack websocket")
+        await self.websocket.close(reason="Stopping bridge")
         return True
