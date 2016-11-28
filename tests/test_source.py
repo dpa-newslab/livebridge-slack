@@ -55,21 +55,31 @@ class SlackSourceTests(asynctest.TestCase):
         self.source._post.assert_called_once_with('https://slack.com/api/rtm.start', [('token', 'baz')])
 
     async def test_listen(self):
-        values = {'a': 1, 'b': 2}
-        def side_effect(arg):
-             return values[arg]
-        res_msg = json.loads(SLACK_MSG)
-        ws = MagicMock()
-        ws.recv = asynctest.CoroutineMock(return_value=SLACK_MSG)
-        ws.close = asynctest.CoroutineMock(return_value=True)
-        websockets.connect = asynctest.CoroutineMock(return_value=ws)
-        self.source._get_ws_url = asynctest.CoroutineMock(return_value="ws://example.com")
-        self.source._inspect_msg = asynctest.CoroutineMock(return_value=res_msg)
-        self.source._channel_id = "baz"
+        with asynctest.patch('websockets.client.WebSocketClientProtocol') as patched_ws:
+            async def side_effect():
+                patched_ws.open = False
+            res_msg = json.loads(SLACK_MSG)
+            patched_ws.recv = asynctest.CoroutineMock(return_value=SLACK_MSG)#["hh", lambda: side_effect()])
+            patched_ws.close = asynctest.CoroutineMock(return_value=True)
+            patched_ws.open = True
+            websockets.connect = asynctest.CoroutineMock(return_value=patched_ws)
 
-        cb = MagicMock(return_value="foo", side_effect=[asyncio.sleep(1), self.source.stop()])
-        await self.source.listen(cb)
-        self.source._inspect_msg.assert_called_with(SLACK_MSG)
+            self.source._get_ws_url = asynctest.CoroutineMock(return_value="ws://example.com")
+            self.source._inspect_msg = asynctest.CoroutineMock(return_value=SLACK_MSG, side_effect=["foo", "baz", side_effect()])
+            self.source._channel_id = "baz"
+
+            cb = asynctest.CoroutineMock()#side_effect=["foo", side_effect(), "foo"])
+            res = await self.source.listen(cb)
+
+            assert self.source._inspect_msg.call_count == 3
+            assert cb.call_count == 2
+
+    async def test_listen_failing(self):
+        self.source._get_ws_url = asynctest.CoroutineMock(side_effect=Exception("Test"))
+        cb = asynctest.CoroutineMock()
+        res = await self.source.listen(cb)
+        assert res == True
+        assert cb.call_count == 0
 
     async def test_inspect(self):
         self.source._channel_id = "C1123456"

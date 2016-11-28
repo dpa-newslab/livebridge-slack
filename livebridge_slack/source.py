@@ -13,6 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import asyncio
 import logging
 import websockets
 import json
@@ -61,7 +62,7 @@ class SlackSource(SlackClient, StreamingSource):
                 msg = await self.websocket.recv()
                 doc = await self._inspect_msg(msg)
                 if doc:
-                    await callback([SlackPost(doc)])
+                    asyncio.ensure_future(callback([SlackPost(doc)]))
         except Exception as e:
             logger.error("Exception listening to websocket {} {}: {}".format(self.type, self.channel, e))
         return True
