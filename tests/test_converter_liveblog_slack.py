@@ -32,7 +32,9 @@ class SlackConverterTest(asynctest.TestCase):
         assert conversion.content == """\n*Text*  mit ein parr _Formatierungen_. Und einem <http://dpa.de|Link>. Und weiterer ~Text~.\n\n\nhttp://newslab-liveblog-demo.s3-eu-central-1.amazonaws.com/aa7c892f1b1b7df17f635106e27c55d86a5c5b6144bebe2490f4ce14be671dd7\n\nGähn  _(Mich)_ \nListen:\n • Eins\n • Zwei\n • Drei\n\n\n • u1\n • u2\n • u3\n\n\n>*Mit dem Wissen wächst der Zweifel.*\n> • _Johann Wolfgang von Goethe_\n\n\nNochmal _*abschließender* _ Text.\n\nhttps://twitter.com/dpa_live/status/775991579676909568\n"""
         await self.converter.remove_images(conversion.images)
 
+    async def test_simple_conversion_failing(self):
         # let it fail with catched exception
+        post = load_json('post_to_convert.json')
         del post["groups"][1]["refs"]
         conversion = await self.converter.convert(post)
         assert conversion.content == ""

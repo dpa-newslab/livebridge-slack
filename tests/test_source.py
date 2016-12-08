@@ -55,31 +55,43 @@ class SlackSourceTests(asynctest.TestCase):
         self.source._post.assert_called_once_with('https://slack.com/api/rtm.start', [('token', 'baz')])
 
     async def test_listen(self):
-        with asynctest.patch('websockets.client.WebSocketClientProtocol') as patched_ws:
+            conn = MagicMock(spec=websockets.client.WebSocketClientProtocol)
+            conn.open = True
+            conn.recv = asynctest.CoroutineMock(return_value=SLACK_MSG)
+            conn.close = asynctest.CoroutineMock(return_value=True)
+            websockets.connect = asynctest.CoroutineMock(return_value=True)
             async def side_effect():
-                patched_ws.open = False
-            res_msg = json.loads(SLACK_MSG)
-            patched_ws.recv = asynctest.CoroutineMock(return_value=SLACK_MSG)#["hh", lambda: side_effect()])
-            patched_ws.close = asynctest.CoroutineMock(return_value=True)
-            patched_ws.open = True
-            websockets.connect = asynctest.CoroutineMock(return_value=patched_ws)
+                conn.open = False
+            websockets.connect.return_value=conn
 
             self.source._get_ws_url = asynctest.CoroutineMock(return_value="ws://example.com")
             self.source._inspect_msg = asynctest.CoroutineMock(return_value=SLACK_MSG, side_effect=["foo", "baz", side_effect()])
             self.source._channel_id = "baz"
 
-            cb = asynctest.CoroutineMock()#side_effect=["foo", side_effect(), "foo"])
+            cb = asynctest.CoroutineMock(return_value=True)
             res = await self.source.listen(cb)
-
             assert self.source._inspect_msg.call_count == 3
             assert cb.call_count == 2
 
-    async def test_listen_failing(self):
-        self.source._get_ws_url = asynctest.CoroutineMock(side_effect=Exception("Test"))
-        cb = asynctest.CoroutineMock()
-        res = await self.source.listen(cb)
-        assert res == True
-        assert cb.call_count == 0
+            # fail with exception I
+            self.source.websocket = "Test"
+            websockets.connect = asynctest.CoroutineMock(side_effect=Exception("Test"))
+            res = await self.source.listen(cb)
+            assert res == True
+            assert self.source.websocket == "Test"
+
+            # fail with exception II
+            websockets.connect = asynctest.CoroutineMock(side_effect=ConnectionRefusedError("ConnectionRefusedError"))
+            res = await self.source.listen(cb)
+            assert res == True
+            assert self.source.websocket == "Test"
+
+            # fail with exception III
+            websockets.connect = asynctest.CoroutineMock(
+                side_effect=websockets.exceptions.ConnectionClosed(code=1006, reason="Testing"))
+            res = await self.source.listen(cb)
+            assert res == True
+            assert self.source.websocket == "Test"
 
     async def test_inspect(self):
         self.source._channel_id = "C1123456"
@@ -100,6 +112,18 @@ class SlackSourceTests(asynctest.TestCase):
         res = await self.source._inspect_msg(SLACK_MSG.replace('"subtype":"message_changed"', '"subtype":"message_deleted"'))
         assert res == exp_res
 
-    async def test_inspect_failing(self):
+    async def test_inspect_unknown_message(self):
         res = await self.source._inspect_msg("{}")
         assert res == None
+
+    async def test_inspect_failing(self):
+        res = await self.source._inspect_msg({})
+        assert res == None
+
+    async def test_reconnect(self):
+        self.source.listen = asynctest.CoroutineMock(return_value=None)
+        cb = "test"
+        res = self.source.reconnect(cb)
+        asyncio.sleep(2)
+        assert self.source.listen.call_count == 1
+        assert self.source.listen.call_args == asynctest.call(cb)

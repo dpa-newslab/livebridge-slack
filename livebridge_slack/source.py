@@ -36,20 +36,28 @@ class SlackSource(SlackClient, StreamingSource):
         return wss_url
 
     async def _inspect_msg(self, msg_str):
-        msg = json.loads(msg_str)
-        msg["livebridge"] = {}
-        if msg.get("type") == "message" and msg.get("channel") == await self.channel_id:
-            if not msg.get("hidden"):
-                msg["livebridge"]["action"] = "create"
-            elif msg.get("subtype") == "message_changed":
-                if msg.get("message") and not msg["message"].get("attachements"):
-                    msg["livebridge"]["action"] = "update"
-            elif msg.get("subtype") == "message_deleted":
-                msg["livebridge"]["action"] = "delete"
-        else:
-            logger.debug("DATA: {}".format(msg_str))
-            return None
-        return msg
+        try:
+            msg = json.loads(msg_str)
+            msg["livebridge"] = {}
+            if msg.get("type") == "message" and msg.get("channel") == await self.channel_id:
+                if not msg.get("hidden"):
+                    msg["livebridge"]["action"] = "create"
+                elif msg.get("subtype") == "message_changed":
+                    if msg.get("message") and not msg["message"].get("attachements"):
+                        msg["livebridge"]["action"] = "update"
+                elif msg.get("subtype") == "message_deleted":
+                    msg["livebridge"]["action"] = "delete"
+            else:
+                logger.debug("DATA: {}".format(msg_str))
+                return None
+            return msg
+        except Exception as e:
+            logger.debug("Failing inspection of msg: {}".format(e))
+        return None
+
+    def reconnect(self, callback):
+        logger.debug("Reconnecting...")
+        asyncio.ensure_future(self.listen(callback))
 
     async def listen(self, callback):
         try:
@@ -63,11 +71,18 @@ class SlackSource(SlackClient, StreamingSource):
                 doc = await self._inspect_msg(msg)
                 if doc:
                     asyncio.ensure_future(callback([SlackPost(doc)]))
-        except Exception as e:
+        except ConnectionRefusedError as e:
             logger.error("Exception listening to websocket {} {}: {}".format(self.type, self.channel, e))
+            asyncio.get_event_loop().call_later(5, self.reconnect, callback)
+        except websockets.exceptions.ConnectionClosed as e:
+            logger.error("Webocket connection closed: {} {} {}".format(self.type, self.channel, e))
+            if e.code == 1006:
+                asyncio.get_event_loop().call_later(5, self.reconnect, callback)
+        except Exception as e:
+            logger.error("Exception listening to websocket {} {} {}".format(self.type, self.channel, e))
         return True
 
     async def stop(self):
         logger.debug("Stopping slack websocket")
-        await self.websocket.close(reason="Stopping bridge")
+        asyncio.ensure_future(self.websocket.close(reason="Stopping bridge"))
         return True
