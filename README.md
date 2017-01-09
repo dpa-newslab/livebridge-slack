@@ -1,5 +1,8 @@
 # livebridge-slack
 
+[![Build Status](https://travis-ci.org/dpa-newslab/livebridge-slack.svg?branch=master)](https://travis-ci.org/dpa-newslab/livebridge-slack                                                                                      
+[![Coverage Status](https://coveralls.io/repos/github/dpa-newslab/livebridge-slack/badge.svg?branch=master)](https://coveralls.io/github/dpa-newslab/livebridge-slack?branch=master)
+
 A [Slack](https://slack.com) plugin for [Livebridge](https://github.com/dpa-newslab/livebridge).
 
 It allows to use Slack channels as source and target for [Livebridge](https://github.com/dpa-newslab/livebridge). 

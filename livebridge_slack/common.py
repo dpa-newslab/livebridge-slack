@@ -32,6 +32,10 @@ class SlackClient(object):
         self._channel_id = None
         self.last_updated = None
 
+    @property                                                                                                                               
+    def source_id(self):
+        return "{}-{}".format(self.type, self.channel)
+
     @property
     async def channel_id(self):
         """Lookups channel_id for channel from slack api."""
