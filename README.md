@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.org/dpa-newslab/livebridge-slack.svg?branch=master)](https://travis-ci.org/dpa-newslab/livebridge-slack)
 [![Coverage Status](https://coveralls.io/repos/github/dpa-newslab/livebridge-slack/badge.svg?branch=master)](https://coveralls.io/github/dpa-newslab/livebridge-slack?branch=master)
+[![PyPi](https://badge.fury.io/py/livebridge-slack.svg)](https://pypi.python.org/pypi/livebridge-slack)
 
 A [Slack](https://slack.com) plugin for [Livebridge](https://github.com/dpa-newslab/livebridge).
 
