@@ -15,10 +15,30 @@
 # limitations under the License.
 import asynctest
 from asynctest import MagicMock
+from aiohttp.errors import ClientOSError
 from livebridge.base import BaseTarget, BasePost, TargetResponse
 from livebridge_slack.common import SlackClient
 from livebridge_slack import SlackTarget
 from tests import load_json
+
+
+class TestResponse:
+
+    def __init__(self, url, data={}, status=200):
+        self.status = status
+        self.data = data
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *exc):
+        pass
+
+    async def json(self):
+        return self.data
+
+    async def text(self):
+        return repr(self.data)
 
 
 class SlackTargetTests(asynctest.TestCase):
@@ -36,6 +56,7 @@ class SlackTargetTests(asynctest.TestCase):
         assert issubclass(SlackTarget, BaseTarget) == True
         assert issubclass(SlackTarget, SlackClient) == True
         assert isinstance(self.client, BaseTarget) == True
+        assert self.client.source_id == "slack-foo"
 
     @asynctest.ignore_loop
     def test_get_id_target(self):
@@ -144,3 +165,22 @@ class SlackTargetTests(asynctest.TestCase):
     async def test_handle_extras(self):
         resp = await self.client.handle_extras({})
         assert resp == None
+
+    async def test_common_post(self):
+        with asynctest.patch("aiohttp.client.ClientSession.post") as patched:
+            patched.return_value = TestResponse(url="http://foo.com", status=201, data={"ok": True})
+            res = await self.client._post("https://dpa.com/resource", data={"foo": "bla"}, status=201)
+            assert type(res) == dict
+            assert res == {"ok": True}
+
+            # failing
+            res = await self.client._post("https://dpa.com/resource", status=404)
+            assert res == {}
+
+            patched.return_value = TestResponse(url="http://foo.com", status=201, data={"ok": False})
+            res = await self.client._post("https://dpa.com/resource", data={"foo": "bla"}, status=201)
+            assert res == {}
+
+            patched.side_effect = ClientOSError()
+            res = await self.client._post("https://dpa.com/resource", data={"foo": "bla"}, status=201)
+            assert res == {}
