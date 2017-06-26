@@ -32,7 +32,7 @@ class SlackClient(object):
         self._channel_id = None
         self.last_updated = None
 
-    @property                                                                                                                               
+    @property
     def source_id(self):
         return "{}-{}".format(self.type, self.channel)
 
@@ -72,7 +72,7 @@ class SlackClient(object):
                     else:
                         logger.debug("POST request failed with status [{}], expected {}".format(resp.status, status))
                         logger.debug(await resp.text())
-        except aiohttp.errors.ClientOSError as e:
+        except aiohttp.client_exceptions.ClientOSError as e:
             logger.error("POST request failed for [{}] on {}".format(self.channel, self.endpoint))
             logger.error(e)
         return {}

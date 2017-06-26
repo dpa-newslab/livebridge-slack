@@ -15,7 +15,7 @@
 # limitations under the License.
 import asynctest
 from asynctest import MagicMock
-from aiohttp.errors import ClientOSError
+from aiohttp.client_exceptions import ClientOSError
 from livebridge.base import BaseTarget, BasePost, TargetResponse
 from livebridge_slack.common import SlackClient
 from livebridge_slack import SlackTarget
