@@ -32,7 +32,7 @@ class SlackSourceTests(asynctest.TestCase):
         self.channel = "foo"
         self.source = SlackSource(config={"auth": {"token":self.token}, "channel": self.channel})
 
-    @asynctest.ignore_loop
+    @asynctest.fail_on(unused_loop=False)
     def test_init(self):
         assert self.source.type == "slack"
         assert self.source.mode == "streaming"

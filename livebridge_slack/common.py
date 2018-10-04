@@ -61,7 +61,7 @@ class SlackClient(object):
     async def _post(self, url, data=[], *, images=[], status=200):
         try:
             logger.debug("POST: {}".format(url))
-            with aiohttp.ClientSession() as session:
+            async with aiohttp.ClientSession() as session:
                 async with session.post(url, data=data) as resp:
                     if resp.status == status:
                         msg = await resp.json()

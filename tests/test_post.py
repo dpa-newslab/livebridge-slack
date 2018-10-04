@@ -28,7 +28,7 @@ class SlackPostTest(asynctest.TestCase):
         self.content= "foobaz"
         self.sp = SlackPost(self.post, content=self.content, images=[])
 
-    @asynctest.ignore_loop
+    @asynctest.fail_on(unused_loop=False)
     def test_init(self):
         assert self.sp.data == self.post
         assert hasattr(self.sp, "is_deleted") == True
@@ -40,7 +40,7 @@ class SlackPostTest(asynctest.TestCase):
         assert self.sp.images == []
         assert self.sp.content == self.content
 
-    @asynctest.ignore_loop
+    @asynctest.fail_on(unused_loop=False)
     def test_get_action(self):
         # ignore/submitted
         # should be update
@@ -55,7 +55,7 @@ class SlackPostTest(asynctest.TestCase):
         self.post["livebridge"]["action"] = "create"
         assert self.sp.get_action() == "create"
 
-    @asynctest.ignore_loop
+    @asynctest.fail_on(unused_loop=False)
     def test_get_updated(self):
         assert self.sp.updated == datetime(2016, 10, 4, 11, 8, 27, 4)
         assert self.sp.created == datetime(2016, 10, 4, 11, 0, 6, 2)
@@ -63,21 +63,21 @@ class SlackPostTest(asynctest.TestCase):
         assert self.sp.updated == datetime(2016, 10, 4, 11, 8, 27, 4)
         assert self.sp.created == datetime(2016, 10, 4, 11, 8, 27, 4)
 
-    @asynctest.ignore_loop
+    @asynctest.fail_on(unused_loop=False)
     def test_get_deleted_id(self):
         assert self.sp.id==  "1475578806.000002"
         self.sp.data["deleted_ts"] = "foo"
         assert self.sp.id == "foo"
 
-    @asynctest.ignore_loop
+    @asynctest.fail_on(unused_loop=False)
     def test_is_not_delete(self):
         assert self.sp.is_deleted == False
 
-    @asynctest.ignore_loop
+    @asynctest.fail_on(unused_loop=False)
     def test_is_sticky(self):
         assert self.sp.is_sticky == False
 
-    @asynctest.ignore_loop
+    @asynctest.fail_on(unused_loop=False)
     def test_is_deleted(self):
         self.sp.data["livebridge"]["action"] = "delete"
         assert self.sp.is_deleted == True
@@ -85,7 +85,7 @@ class SlackPostTest(asynctest.TestCase):
         self.sp.data["livebridge"]["action"] = "update"
         assert self.sp.is_deleted == False
 
-    @asynctest.ignore_loop
+    @asynctest.fail_on(unused_loop=False)
     def test_is_update(self):
         self.sp.data["livebridge"]["action"] = "update"
         assert self.sp.is_update == True
@@ -93,25 +93,25 @@ class SlackPostTest(asynctest.TestCase):
         self.sp.data["livebridge"]["action"] = "delete"
         assert self.sp.is_update == False
 
-    @asynctest.ignore_loop
+    @asynctest.fail_on(unused_loop=False)
     def test_target_doc(self):
         assert self.sp.target_doc == None
         self.sp._existing = {"target_doc": {"doc": "foo"}}
         assert self.sp.target_doc == self.sp._existing["target_doc"]
 
-    @asynctest.ignore_loop
+    @asynctest.fail_on(unused_loop=False)
     def test_target_doc_setter(self):
         assert self.sp.target_doc == None
         self.sp.target_doc = {"target_doc": {"doc": "foo"}}
         assert self.sp.target_doc ==  {"target_doc": {"doc": "foo"}}
 
-    @asynctest.ignore_loop
+    @asynctest.fail_on(unused_loop=False)
     def test_target_id(self):
         assert self.sp._target_id == None
         self.sp._target_id = "foobaz"
         assert self.sp.target_id == "foobaz"
 
-    @asynctest.ignore_loop
+    @asynctest.fail_on(unused_loop=False)
     def test_target_id_from_existing(self):
         self.sp.set_existing({"target_id": "foobaz"})
         assert self.sp.target_id == "foobaz"

@@ -23,6 +23,7 @@ from tests import load_json
 
 
 class TestResponse:
+    __test__ = False
 
     def __init__(self, url, data={}, status=200):
         self.status = status
@@ -48,7 +49,7 @@ class SlackTargetTests(asynctest.TestCase):
         self.channel = "foo"
         self.client = SlackTarget(config={"auth": {"token":self.token}, "channel": self.channel})
 
-    @asynctest.ignore_loop
+    @asynctest.fail_on(unused_loop=False)
     def test_init(self):
         assert self.client.type == "slack"
         assert self.client.token == self.token
@@ -58,7 +59,7 @@ class SlackTargetTests(asynctest.TestCase):
         assert isinstance(self.client, BaseTarget) == True
         assert self.client.source_id == "slack-foo"
 
-    @asynctest.ignore_loop
+    @asynctest.fail_on(unused_loop=False)
     def test_get_id_target(self):
         post_data = load_json('post_to_convert.json')
 
